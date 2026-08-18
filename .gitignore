@@ -32,6 +32,16 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
+
+# sqlite database (data thật, không commit)
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+
+# dev logs
+dev-server.log
 
 # vercel
 .vercel
@@ -39,3 +49,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+prod-start.log

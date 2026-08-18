@@ -1,36 +1,64 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Web Điểm Danh MONICA
 
-## Getting Started
+Hệ thống quản lý điểm danh trực tuyến: nhân viên điểm danh bằng mã PIN, quản lý chấm công, đơn từ, bảng lương.
 
-First, run the development server:
+## Tính năng
+
+- **Điểm danh bằng mã PIN** 6 số (vào làm / tan làm), tự nhận biết Đúng giờ / Đi muộn / Về sớm
+- **Một tài khoản – một phiên đăng nhập**: đăng nhập nơi khác thì chỗ cũ bị đá ra realtime
+- **Portal nhân viên**: dashboard, điểm danh, lịch sử chấm công, đơn từ, bảng lương, thông báo
+- **Portal admin/HR**: quản lý nhân sự (cấp/đổi mã PIN), ca làm việc, xếp lịch, phê duyệt đơn, chính sách, báo cáo, tạo bảng lương tự động
+- Phân quyền 4 cấp: Nhân viên / Trưởng nhóm / HR / Super Admin
+
+## Công nghệ
+
+- **Next.js 16** (Turbopack, `proxy.ts` thay `middleware.ts`)
+- **Prisma 7** + SQLite (driver adapter `@prisma/adapter-better-sqlite3`)
+- **NextAuth 5** (beta) — JWT session, Credentials
+- Tailwind CSS v4, react-hook-form, zod v4, recharts, sonner
+
+## Chạy local
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+cp .env.example .env        # đổi AUTH_SECRET
+npx prisma migrate deploy
+npm run seed                # dữ liệu mẫu
+npm run dev                 # http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Hoặc chỉ cần `npm run dev` — script `postinstall` tự generate Prisma Client, `scripts/start.mjs` tự migrate + seed khi start production.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Tài khoản demo (mật khẩu `123456`)
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Vai trò | Email | PIN |
+|---|---|---|
+| Super Admin | admin@monica.vn | 000001 |
+| HR Manager | hr@monica.vn | 000002 |
+| Trưởng nhóm | leader@monica.vn | 000003 |
+| Nhân viên | a@monica.vn | 111111 |
+| Nhân viên | c@monica.vn | 222222 |
+| Nhân viên | d@monica.vn | 333333 |
 
-## Learn More
+## Deploy lên Railway
 
-To learn more about Next.js, take a look at the following resources:
+Railway giữ nguyên SQLite (dùng volume bền) — không cần database riêng.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Push repo lên GitHub
+2. Vào [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo** → chọn repo
+3. Tạo **Volume** (mục Volumes): mount tại path `/data`
+4. Cài biến môi trường (Variables):
+   - `DATABASE_URL=file:/data/app.db`
+   - `AUTH_SECRET=<chuỗi bí mật, sinh bằng npx auth secret>`
+   - `AUTH_TRUST_HOST=true`
+5. Deploy. Lần khởi động đầu tự chạy migrate + seed dữ liệu mẫu.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Dockerfile + railway.json đã được cấu hình sẵn (Node 22, volume `/data`, healthcheck `/login`).
 
-## Deploy on Vercel
+## Scripts
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- `npm run dev` — dev server
+- `npm run build` — `prisma generate` + `next build`
+- `npm start` — production (next start, PORT mặc định 3000)
+- `node scripts/start.mjs` — migrate + seed + start (dùng trong production)
+- `npx tsx prisma/seed.ts` — nạp dữ liệu mẫu

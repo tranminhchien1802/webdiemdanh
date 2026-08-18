@@ -1,0 +1,156 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+enum Role {
+  SUPER_ADMIN
+  HR_MANAGER
+  LEADER
+  EMPLOYEE
+}
+
+model User {
+  id           String        @id @default(cuid())
+  name         String
+  email        String        @unique
+  password     String
+  pin          String        @default("")
+  phone        String?
+  position     String?
+  role         Role          @default(EMPLOYEE)
+  departmentId String?
+  department   Department?   @relation(fields: [departmentId], references: [id])
+  baseSalary   Float         @default(0)
+  isActive     Boolean       @default(true)
+  sessionVersion Int         @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  attendances Attendance[]
+  schedules   Schedule[]
+  requests    Request[]
+  payslips    Payslip[]
+  approved    Request[]      @relation("RequestApprover")
+  notifications Notification[]
+}
+
+model Department {
+  id    String @id @default(cuid())
+  name  String @unique
+  users User[]
+}
+
+model Shift {
+  id        String   @id @default(cuid())
+  name      String
+  startTime String
+  endTime   String
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  schedules Schedule[]
+}
+
+model Schedule {
+  id        String   @id @default(cuid())
+  userId    String
+  shiftId   String
+  date      DateTime
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  shift     Shift    @relation(fields: [shiftId], references: [id])
+
+  @@unique([userId, date])
+}
+
+enum AttendanceStatus {
+  ON_TIME
+  LATE
+  EARLY_LEAVE
+  MISSING
+}
+
+model Attendance {
+  id          String           @id @default(cuid())
+  userId      String
+  date        DateTime
+  checkIn     DateTime?
+  checkOut    DateTime?
+  status      AttendanceStatus @default(ON_TIME)
+  note        String?
+  user        User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, date])
+}
+
+enum RequestType {
+  LEAVE_PAID
+  LEAVE_UNPAID
+  MISSING_ATTENDANCE
+  LATE_EARLY
+  BUSINESS_TRIP
+}
+
+enum RequestStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+model Request {
+  id           String        @id @default(cuid())
+  userId       String
+  type         RequestType
+  fromDate     DateTime
+  toDate       DateTime
+  reason       String
+  status       RequestStatus @default(PENDING)
+  approverId   String?
+  approverNote String?
+  createdAt    DateTime      @default(now())
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  approver     User?         @relation("RequestApprover", fields: [approverId], references: [id])
+}
+
+model Policy {
+  id             Int    @id @default(1)
+  officeName     String @default("Văn phòng Monica")
+  officeLat      Float  @default(10.8231)
+  officeLng      Float  @default(106.6297)
+  radiusMeters   Float  @default(200)
+  workStart      String @default("08:00")
+  workEnd        String @default("17:30")
+  graceMinutes   Int    @default(15)
+  otRate         Float  @default(1.5)
+  updatedAt      DateTime @updatedAt
+}
+
+model Payslip {
+  id         String   @id @default(cuid())
+  userId     String
+  month      Int
+  year       Int
+  baseSalary Float
+  allowance  Float    @default(0)
+  overtimePay Float   @default(0)
+  deduction  Float    @default(0)
+  insurance  Float    @default(0)
+  total      Float
+  createdAt  DateTime @default(now())
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, month, year])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  title     String
+  message   String
+  type      String   @default("INFO")
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
