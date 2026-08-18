@@ -7,8 +7,11 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    // prisma generate không cần DB thật; chỉ migrate/seed mới cần.
-    // Dùng process.env thay vì env() vì env() throw khi thiếu biến.
-    url: process.env.DATABASE_URL || "postgresql://placeholder:placeholder@localhost:5432/db",
+    // Ưu tiên DATABASE_URL_UNPOOLED (host không qua pgbouncer) để migrate không
+    // bị lỗi advisory lock; fallback DATABASE_URL. process.env để không throw.
+    url:
+      process.env.DATABASE_URL_UNPOOLED ||
+      process.env.DATABASE_URL ||
+      "postgresql://placeholder:placeholder@localhost:5432/db",
   },
 });
