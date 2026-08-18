@@ -1,6 +1,9 @@
 import type { NextAuthConfig } from "next-auth";
-import { prisma } from "@/lib/prisma";
 
+// Config dùng cho PROXY (middleware) — KHÔNG import prisma để proxy không
+// query DB trên mỗi request (serverless Vercel sẽ lỗi).
+// Logic sessionVersion (kick 1 tài khoản 1 phiên) nằm trong jwt callback của
+// src/auth.ts (chạy ở server code), và SessionGuard client kiểm tra qua API.
 export const authConfig = {
   trustHost: true,
   pages: {
@@ -25,28 +28,10 @@ export const authConfig = {
 
       return true;
     },
-    async jwt({ token, user }) {
+    jwt({ token, user }) {
       if (user) {
         token.id = user.id;
         token.role = (user as { role?: string }).role;
-
-        const updated = await prisma.user.update({
-          where: { id: user.id },
-          data: { sessionVersion: { increment: 1 } },
-          select: { sessionVersion: true },
-        });
-        token.sessionVersion = updated.sessionVersion;
-        return token;
-      }
-
-      if (token.id && token.sessionVersion !== undefined) {
-        const dbUser = await prisma.user.findUnique({
-          where: { id: token.id as string },
-          select: { sessionVersion: true },
-        });
-        if (!dbUser || dbUser.sessionVersion !== token.sessionVersion) {
-          return null;
-        }
       }
       return token;
     },

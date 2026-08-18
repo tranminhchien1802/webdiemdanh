@@ -39,4 +39,32 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       },
     }),
   ],
+  callbacks: {
+    ...authConfig.callbacks,
+    async jwt({ token, user }) {
+      if (user) {
+        token.id = user.id;
+        token.role = (user as { role?: string }).role;
+
+        const updated = await prisma.user.update({
+          where: { id: user.id },
+          data: { sessionVersion: { increment: 1 } },
+          select: { sessionVersion: true },
+        });
+        token.sessionVersion = updated.sessionVersion;
+        return token;
+      }
+
+      if (token.id && token.sessionVersion !== undefined) {
+        const dbUser = await prisma.user.findUnique({
+          where: { id: token.id as string },
+          select: { sessionVersion: true },
+        });
+        if (!dbUser || dbUser.sessionVersion !== token.sessionVersion) {
+          return null;
+        }
+      }
+      return token;
+    },
+  },
 });
