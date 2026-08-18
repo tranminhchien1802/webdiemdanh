@@ -1,0 +1,18 @@
+{
+  "buildCommand": "npm run vercel-build",
+  "installCommand": "npm ci",
+  "framework": "nextjs",
+  "env": {
+    "DATABASE_URL": {
+      "description": "PostgreSQL connection string (format: postgresql://user:password@host:5432/dbname?sslmode=require)",
+      "required": true
+    },
+    "AUTH_SECRET": {
+      "description": "Secret key for NextAuth (generate: npx auth secret)",
+      "required": true
+    },
+    "AUTH_TRUST_HOST": {
+      "value": "true"
+    }
+  }
+}
