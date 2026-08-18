@@ -7,6 +7,7 @@ export default defineConfig({
     path: "prisma/migrations",
   },
   datasource: {
-    url: env("DATABASE_URL"),
+    // prisma generate không cần DB thật; chỉ migrate/seed mới cần
+    url: env("DATABASE_URL") || "postgresql://placeholder:placeholder@localhost:5432/db",
   },
 });

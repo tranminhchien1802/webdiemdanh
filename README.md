@@ -13,7 +13,7 @@ Hệ thống quản lý điểm danh trực tuyến: nhân viên điểm danh b�
 ## Công nghệ
 
 - **Next.js 16** (Turbopack, `proxy.ts` thay `middleware.ts`)
-- **Prisma 7** + SQLite (driver adapter `@prisma/adapter-better-sqlite3`)
+- **Prisma 7** + **PostgreSQL** (driver adapter `@prisma/adapter-pg`)
 - **NextAuth 5** (beta) — JWT session, Credentials
 - Tailwind CSS v4, react-hook-form, zod v4, recharts, sonner
 
@@ -22,12 +22,11 @@ Hệ thống quản lý điểm danh trực tuyến: nhân viên điểm danh b�
 ```bash
 npm install
 cp .env.example .env        # đổi AUTH_SECRET
-npx prisma migrate deploy
 npm run seed                # dữ liệu mẫu
 npm run dev                 # http://localhost:3000
 ```
 
-Hoặc chỉ cần `npm run dev` — script `postinstall` tự generate Prisma Client, `scripts/start.mjs` tự migrate + seed khi start production.
+Script `postinstall` tự generate Prisma Client. `vercel-build` tự migrate + seed khi deploy.
 
 ### Tài khoản demo (mật khẩu `123456`)
 
@@ -40,25 +39,24 @@ Hoặc chỉ cần `npm run dev` — script `postinstall` tự generate Prisma C
 | Nhân viên | c@monica.vn | 222222 |
 | Nhân viên | d@monica.vn | 333333 |
 
-## Deploy lên Railway
+## Deploy lên Vercel
 
-Railway giữ nguyên SQLite (dùng volume bền) — không cần database riêng.
+App dùng **PostgreSQL** (không phải SQLite) để chạy được trên serverless.
 
 1. Push repo lên GitHub
-2. Vào [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub repo** → chọn repo
-3. Tạo **Volume** (mục Volumes): mount tại path `/data`
-4. Cài biến môi trường (Variables):
-   - `DATABASE_URL=file:/data/app.db`
-   - `AUTH_SECRET=<chuỗi bí mật, sinh bằng npx auth secret>`
+2. Tạo database Postgres miễn phí (chọn 1 trong 2):
+   - **Neon** (neon.tech) → New Project → copy chuỗi `DATABASE_URL`
+   - Hoặc **Vercel Postgres**: trong dự án Vercel → tab Storage → Create Database
+3. Trên Vercel: **New Project** → Import repo → mở **Settings → Environment Variables**:
+   - `DATABASE_URL=<chuỗi postgres://...>`
+   - `AUTH_SECRET=<npx auth secret để sinh>`
    - `AUTH_TRUST_HOST=true`
-5. Deploy. Lần khởi động đầu tự chạy migrate + seed dữ liệu mẫu.
-
-Dockerfile + railway.json đã được cấu hình sẵn (Node 22, volume `/data`, healthcheck `/login`).
+4. Deploy. `vercel-build` tự chạy `prisma migrate deploy` + seed dữ liệu mẫu ở lần đầu.
 
 ## Scripts
 
 - `npm run dev` — dev server
 - `npm run build` — `prisma generate` + `next build`
 - `npm start` — production (next start, PORT mặc định 3000)
-- `node scripts/start.mjs` — migrate + seed + start (dùng trong production)
+- `node scripts/start.mjs` — migrate + seed + start (dùng khi chạy Node thuần)
 - `npx tsx prisma/seed.ts` — nạp dữ liệu mẫu
